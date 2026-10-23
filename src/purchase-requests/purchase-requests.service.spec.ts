@@ -1,12 +1,13 @@
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+
 import { PurchaseRequestsService } from './purchase-requests.service';
 import {
   PurchaseRequest,
   PurchaseRequestStatus,
 } from './entities/purchase-request.entity';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { User, UserRole } from '../users/entities/user.entity';
 
 describe('PurchaseRequestsService', () => {
   let service: PurchaseRequestsService;
@@ -18,7 +19,45 @@ describe('PurchaseRequestsService', () => {
     findOne: jest.Mock;
   };
 
+  const requester = {
+    id: 'requester-123',
+    name: 'Maria Silva',
+    email: 'maria@example.com',
+    role: UserRole.REQUESTER,
+    isActive: true,
+  } as User;
+
+  const approver = {
+    id: 'approver-123',
+    name: 'João Silva',
+    email: 'joao@example.com',
+    role: UserRole.APPROVER,
+    isActive: true,
+  } as User;
+
+  const purchaseRequestData = {
+    id: 'request-123',
+    title: 'Compra de notebook',
+    description: 'Notebook para desenvolvimento',
+    estimatedAmount: 5000,
+    status: PurchaseRequestStatus.DRAFT,
+    requester,
+    decidedBy: null,
+    decidedAt: null,
+    decisionReason: null,
+    createdAt: new Date('2026-01-01'),
+  };
+
+  const purchaseRequest = purchaseRequestData as PurchaseRequest;
+
+  const buildPurchaseRequest = (
+    overrides: Partial<PurchaseRequest> = {},
+  ): PurchaseRequest =>
+    ({ ...purchaseRequestData, ...overrides }) as PurchaseRequest;
+
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     repository = {
       create: jest.fn(),
       save: jest.fn(),
@@ -36,179 +75,277 @@ describe('PurchaseRequestsService', () => {
       ],
     }).compile();
 
-    service = module.get<PurchaseRequestsService>(
-      PurchaseRequestsService,
-    );
+    service = module.get<PurchaseRequestsService>(PurchaseRequestsService);
   });
 
-  it('should be defined', () => {
+  it('deve criar o serviço', () => {
     expect(service).toBeDefined();
   });
 
-  it('should create a purchase request with draft status', async () => {
-    const requester = {
-      id: 'user-123',
-    } as any;
+  describe('create', () => {
+    it('deve criar uma solicitação em rascunho e normalizar os campos', async () => {
+      const dto = {
+        title: '  Compra de notebook  ',
+        description: '  Para desenvolvimento  ',
+        estimatedAmount: 5000,
+      };
 
-    const dto = {
-      title: 'Compra de notebooks',
-      description: 'Notebooks para a equipe',
-      estimatedAmount: '5000.00',
-    };
+      repository.create.mockReturnValue(purchaseRequest);
+      repository.save.mockResolvedValue(purchaseRequest);
 
-    const purchaseRequest = {
-      ...dto,
-      title: dto.title.trim(),
-      description: dto.description,
-      status: PurchaseRequestStatus.DRAFT,
-      requester,
-    };
+      await service.create(dto, requester);
 
-    repository.create.mockReturnValue(purchaseRequest);
-
-    repository.save.mockResolvedValue({
-      id: 'request-123',
-      ...purchaseRequest,
-    });
-
-    const result = await service.create(dto, requester);
-
-    expect(repository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Compra de notebooks',
-        estimatedAmount: '5000.00',
+      expect(repository.create).toHaveBeenCalledWith({
+        title: 'Compra de notebook',
+        description: 'Para desenvolvimento',
+        estimatedAmount: 5000,
         status: PurchaseRequestStatus.DRAFT,
         requester,
-      }),
-    );
+      });
 
-    expect(repository.save).toHaveBeenCalled();
-    expect(result.status).toBe(PurchaseRequestStatus.DRAFT);
-    expect(result.requester).toBe(requester);
-  });
-
-  
-  it('should not allow editing a purchase request that is not a draft', async () => {
-    repository.findOne.mockResolvedValue({
-      id: 'request-123',
-      title: 'Compra de notebooks',
-      estimatedAmount: '5000.00',
-      status: PurchaseRequestStatus.PENDING,
-      requester: { id: 'user-123' },
+      expect(repository.save).toHaveBeenCalledWith(purchaseRequest);
     });
 
-    await expect(
-      service.update('request-123', 'user-123', {
-        title: 'Novo título para a compra',
-      }),
-    ).rejects.toThrow(ForbiddenException);
+    it('deve converter descrição vazia em null', async () => {
+      repository.create.mockReturnValue(purchaseRequest);
+      repository.save.mockResolvedValue(purchaseRequest);
 
-    expect(repository.save).not.toHaveBeenCalled();
+      await service.create(
+        {
+          title: 'Compra de notebook',
+          description: '   ',
+          estimatedAmount: 5000,
+        },
+        requester,
+      );
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ description: null }),
+      );
+    });
   });
 
-  it('should submit a draft purchase request for approval', async () => {
-    const draftRequest = {
-      id: 'request-123',
-      title: 'Compra de notebooks',
-      estimatedAmount: '5000.00',
-      status: PurchaseRequestStatus.DRAFT,
-      requester: { id: 'user-123' },
-    };
+  describe('findAll', () => {
+    it('deve listar somente as solicitações do solicitante informado', async () => {
+      repository.find.mockResolvedValue([purchaseRequest]);
 
-    repository.findOne.mockResolvedValue(draftRequest);
+      const result = await service.findAll(requester.id);
 
-    repository.save.mockImplementation(async (request) => request);
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { requester: { id: requester.id } },
+        relations: { requester: true },
+        order: { createdAt: 'DESC' },
+      });
 
-    const result = await service.submit('request-123', 'user-123');
-
-    expect(result.status).toBe(PurchaseRequestStatus.PENDING);
-    expect(repository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: PurchaseRequestStatus.PENDING,
-      }),
-    );
+      expect(result).toEqual([purchaseRequest]);
+    });
   });
 
-  
-  it('should approve a pending purchase request and record the approver', async () => {
-    const pendingRequest = {
-      id: 'request-123',
-      title: 'Compra de notebooks',
-      estimatedAmount: '5000.00',
-      status: PurchaseRequestStatus.PENDING,
-      requester: { id: 'user-123' },
-      decidedBy: null,
-      decidedAt: null,
-      decisionReason: null,
-    };
+  describe('findOne', () => {
+    it('deve retornar uma solicitação pertencente ao solicitante', async () => {
+      repository.findOne.mockResolvedValue(purchaseRequest);
 
-    const approver = {
-      id: 'approver-123',
-    } as any;
+      const result = await service.findOne(purchaseRequest.id, requester.id);
 
-    repository.findOne.mockResolvedValue(pendingRequest);
-    repository.save.mockImplementation(async (request) => request);
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: {
+          id: purchaseRequest.id,
+          requester: { id: requester.id },
+        },
+        relations: { requester: true },
+      });
 
-    const result = await service.decide('request-123', approver, {
-      decision: 'approved',
-      reason: 'Dentro do orçamento.',
+      expect(result).toEqual(purchaseRequest);
     });
 
-    expect(result.status).toBe(PurchaseRequestStatus.APPROVED);
-    expect(result.decidedBy).toBe(approver);
-    expect(result.decidedAt).toBeInstanceOf(Date);
-    expect(result.decisionReason).toBe('Dentro do orçamento.');
-    expect(repository.save).toHaveBeenCalled();
+    it('deve lançar NotFoundException quando a solicitação não existir ou não pertencer ao solicitante', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.findOne('inexistente', requester.id),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
-  it('should reject a pending purchase request and record the reason', async () => {
-    const pendingRequest = {
-      id: 'request-456',
-      title: 'Compra de monitores',
-      estimatedAmount: '3000.00',
-      status: PurchaseRequestStatus.PENDING,
-      requester: { id: 'user-123' },
-      decidedBy: null,
-      decidedAt: null,
-      decisionReason: null,
-    };
+  describe('update', () => {
+    it('deve atualizar os campos de uma solicitação em rascunho', async () => {
+      const draft = buildPurchaseRequest();
 
-    const approver = {
-      id: 'approver-123',
-    } as any;
+      repository.findOne.mockResolvedValue(draft);
+      repository.save.mockImplementation(async (value) => value);
 
-    repository.findOne.mockResolvedValue(pendingRequest);
-    repository.save.mockImplementation(async (request) => request);
+      const result = await service.update(draft.id, requester.id, {
+        title: '  Novo título  ',
+        description: '  Nova descrição  ',
+        estimatedAmount: 6500,
+      });
 
-    const result = await service.decide('request-456', approver, {
-      decision: 'rejected',
-      reason: 'Valor acima do orçamento disponível.',
+      expect(result.title).toBe('Novo título');
+      expect(result.description).toBe('Nova descrição');
+      expect(result.estimatedAmount).toBe(6500);
+      expect(repository.save).toHaveBeenCalledWith(draft);
     });
 
-    expect(result.status).toBe(PurchaseRequestStatus.REJECTED);
-    expect(result.decidedBy).toBe(approver);
-    expect(result.decidedAt).toBeInstanceOf(Date);
-    expect(result.decisionReason).toBe(
-      'Valor acima do orçamento disponível.',
-    );
-    expect(repository.save).toHaveBeenCalled();
-  });
+    it('deve converter descrição vazia em null', async () => {
+      const draft = buildPurchaseRequest();
 
-  it('should not allow a requester to access another user purchase request', async () => {
-    repository.findOne.mockResolvedValue(null);
+      repository.findOne.mockResolvedValue(draft);
+      repository.save.mockImplementation(async (value) => value);
 
-    await expect(
-      service.findOne('request-from-another-user', 'user-123'),
-    ).rejects.toThrow(NotFoundException);
+      const result = await service.update(draft.id, requester.id, {
+        description: '   ',
+      });
 
-    expect(repository.findOne).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          id: 'request-from-another-user',
-          requester: { id: 'user-123' },
+      expect(result.description).toBeNull();
+    });
+
+    it('deve permitir atualização parcial sem modificar campos omitidos', async () => {
+      const draft = buildPurchaseRequest();
+
+      repository.findOne.mockResolvedValue(draft);
+      repository.save.mockImplementation(async (value) => value);
+
+      const result = await service.update(draft.id, requester.id, {
+        title: 'Novo título',
+      });
+
+      expect(result.title).toBe('Novo título');
+      expect(result.description).toBe(purchaseRequest.description);
+      expect(result.estimatedAmount).toBe(purchaseRequest.estimatedAmount);
+    });
+
+    it('deve impedir a edição de solicitação que não esteja em rascunho', async () => {
+      repository.findOne.mockResolvedValue(
+        buildPurchaseRequest({ status: PurchaseRequestStatus.PENDING }),
+      );
+
+      await expect(
+        service.update(purchaseRequest.id, requester.id, {
+          title: 'Alteração',
         }),
-      }),
-    );
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar NotFoundException quando a solicitação não existir', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.update('inexistente', requester.id, {
+          title: 'Alteração',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
+  describe('submit', () => {
+    it('deve enviar uma solicitação em rascunho para aprovação', async () => {
+      const draft = buildPurchaseRequest();
+
+      repository.findOne.mockResolvedValue(draft);
+      repository.save.mockImplementation(async (value) => value);
+
+      const result = await service.submit(draft.id, requester.id);
+
+      expect(result.status).toBe(PurchaseRequestStatus.PENDING);
+      expect(repository.save).toHaveBeenCalledWith(draft);
+    });
+
+    it('deve impedir o envio de solicitação que não esteja em rascunho', async () => {
+      repository.findOne.mockResolvedValue(
+        buildPurchaseRequest({ status: PurchaseRequestStatus.PENDING }),
+      );
+
+      await expect(
+        service.submit(purchaseRequest.id, requester.id),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar NotFoundException quando a solicitação não existir', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.submit('inexistente', requester.id)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('decide', () => {
+    it('deve aprovar uma solicitação pendente e registrar a decisão', async () => {
+      const pending = buildPurchaseRequest({
+        status: PurchaseRequestStatus.PENDING,
+      });
+
+      repository.findOne.mockResolvedValue(pending);
+      repository.save.mockImplementation(async (value) => value);
+
+      const result = await service.decide(pending.id, approver, {
+        decision: 'approved',
+        reason: '  Dentro do orçamento  ',
+      });
+
+      expect(result.status).toBe(PurchaseRequestStatus.APPROVED);
+      expect(result.decidedBy).toBe(approver);
+      expect(result.decidedAt).toBeInstanceOf(Date);
+      expect(result.decisionReason).toBe('Dentro do orçamento');
+    });
+
+    it('deve rejeitar uma solicitação pendente', async () => {
+      const pending = buildPurchaseRequest({
+        status: PurchaseRequestStatus.PENDING,
+      });
+
+      repository.findOne.mockResolvedValue(pending);
+      repository.save.mockImplementation(async (value) => value);
+
+      const result = await service.decide(pending.id, approver, {
+        decision: 'rejected',
+        reason: 'Fora do orçamento',
+      });
+
+      expect(result.status).toBe(PurchaseRequestStatus.REJECTED);
+      expect(result.decisionReason).toBe('Fora do orçamento');
+    });
+
+    it('deve converter motivo vazio em null', async () => {
+      const pending = buildPurchaseRequest({
+        status: PurchaseRequestStatus.PENDING,
+      });
+
+      repository.findOne.mockResolvedValue(pending);
+      repository.save.mockImplementation(async (value) => value);
+
+      const result = await service.decide(pending.id, approver, {
+        decision: 'approved',
+        reason: '   ',
+      });
+
+      expect(result.decisionReason).toBeNull();
+    });
+
+    it('deve impedir a decisão de uma solicitação que não esteja pendente', async () => {
+      repository.findOne.mockResolvedValue(purchaseRequest);
+
+      await expect(
+        service.decide(purchaseRequest.id, approver, {
+          decision: 'approved',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar NotFoundException quando a solicitação não existir', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.decide('inexistente', approver, {
+          decision: 'approved',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });

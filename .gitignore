@@ -57,3 +57,7 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# E2E test environment and coverage
+/test/.env.e2e
+/test/coverage/
