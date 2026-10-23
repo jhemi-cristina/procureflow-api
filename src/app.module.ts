@@ -5,13 +5,15 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { PurchaseRequest } from './purchase-requests/entities/purchase-request.entity';
+import { PurchaseRequestsModule } from './purchase-requests/purchase-requests.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-    }),
+    }), 
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -31,8 +33,11 @@ import { AuthModule } from './auth/auth.module';
     UsersModule,
 
     AuthModule,
+    PurchaseRequest,
+    PurchaseRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
+  
 })
 export class AppModule {}

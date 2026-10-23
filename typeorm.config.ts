@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import { User } from './src/users/entities/user.entity';
+import { PurchaseRequest } from './src/purchase-requests/entities/purchase-request.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -9,7 +10,7 @@ export default new DataSource({
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  entities: [User],
+  entities: [User, PurchaseRequest],
   migrations: ['src/database/migrations/*.ts'],
   synchronize: false,
 });
