@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Patch,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +15,11 @@ import { PurchaseRequestsService } from './purchase-requests.service';
 import { CreatePurchaseRequestDto } from './dto/create-purchase-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
+import { UpdatePurchaseRequestDto } from './dto/update-purchase-request.dto';
+import { DecidePurchaseRequestDto } from './dto/decide-purchase-request.dto';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../users/entities/user.entity';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -53,4 +59,47 @@ export class PurchaseRequestsController {
   ) {
     return this.purchaseRequestsService.findOne(id, req.user.id);
   }
+  
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePurchaseRequestDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.purchaseRequestsService.update(
+      id,
+      req.user.id,
+      dto,
+    );
+  }
+  
+  @Patch(':id/submit')
+  submit(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.purchaseRequestsService.submit(
+      id,
+      req.user.id,
+    );
+  }
+
+  @Patch(':id/decision')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.APPROVER)
+  async decide(
+    @Param('id') id: string,
+    @Body() dto: DecidePurchaseRequestDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const approver = await this.usersService.findById(req.user.id);
+
+    return this.purchaseRequestsService.decide(
+      id,
+      approver,
+      dto,
+    );
+  }
+
+
 }

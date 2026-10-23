@@ -47,6 +47,26 @@ export class PurchaseRequest {
   @JoinColumn({ name: 'requester_id' })
   requester: User;
 
+  
+  @ManyToOne(() => User, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'decided_by_id' })
+  decidedBy: User | null;
+
+  @Column({
+    name: 'decision_reason',
+    type: 'text',
+    nullable: true,
+  })
+  decisionReason: string | null;
+
+  @Column({
+    name: 'decided_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  decidedAt: Date | null;
+
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
