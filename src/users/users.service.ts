@@ -16,6 +16,18 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
   ) {}
 
+  async findByEmailForAuthentication(
+  email: string,
+): Promise<User | null> {
+  return this.usersRepository
+    .createQueryBuilder('user')
+    .addSelect('user.passwordHash')
+    .where('user.email = :email', {
+      email: email.trim().toLowerCase(),
+    })
+    .getOne();
+}
+
   async create(dto: CreateUserDto) {
     const email = dto.email.trim().toLowerCase();
 
