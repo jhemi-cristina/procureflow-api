@@ -95,6 +95,21 @@ export class PurchaseRequestsController {
     return this.purchaseRequestsService.findPendingApprovals();
   }
 
+  @Get('team')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.APPROVER)
+  @ApiOperation({
+    summary: 'Listar solicitações da equipe',
+    description:
+      'Retorna as solicitações de todos os usuários, exceto rascunhos de terceiros, para compor os indicadores do painel. Disponível apenas para administradores e aprovadores.',
+  })
+  @ApiResponse({ status: 200, description: 'Solicitações da equipe retornadas com sucesso.' })
+  @ApiResponse({ status: 401, description: 'Não autenticado.' })
+  @ApiResponse({ status: 403, description: 'Perfil sem permissão.' })
+  findTeam(@Req() req: AuthenticatedRequest) {
+    return this.purchaseRequestsService.findTeam(req.user.id);
+  }
+
   @Get('recent')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.APPROVER)

@@ -10,6 +10,7 @@ describe('PurchaseRequestsController', () => {
     create: jest.Mock;
     findAll: jest.Mock;
     findPendingApprovals: jest.Mock;
+    findTeam: jest.Mock;
     findRecent: jest.Mock;
     findOne: jest.Mock;
     update: jest.Mock;
@@ -49,6 +50,7 @@ describe('PurchaseRequestsController', () => {
       create: jest.fn(),
       findAll: jest.fn(),
       findPendingApprovals: jest.fn(),
+      findTeam: jest.fn(),
       findRecent: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
@@ -122,6 +124,18 @@ describe('PurchaseRequestsController', () => {
       await expect(controller.findPendingApprovals()).resolves.toEqual([request]);
 
       expect(purchaseRequestsService.findPendingApprovals).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('findTeam', () => {
+    it('deve listar as solicitações da equipe para o usuário autenticado', async () => {
+      purchaseRequestsService.findTeam.mockResolvedValue([request]);
+
+      await expect(
+        controller.findTeam(authenticatedRequest as any),
+      ).resolves.toEqual([request]);
+
+      expect(purchaseRequestsService.findTeam).toHaveBeenCalledWith(user.id);
     });
   });
 

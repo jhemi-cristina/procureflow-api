@@ -158,6 +158,25 @@ describe('PurchaseRequestsService', () => {
     });
   });
 
+  describe('findTeam', () => {
+    it('deve listar todas as solicitações da equipe, ocultando rascunhos de outros usuários', async () => {
+      repository.find.mockResolvedValue([purchaseRequest]);
+
+      const result = await service.findTeam(requester.id);
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: [
+          { status: Not(PurchaseRequestStatus.DRAFT) },
+          { requester: { id: requester.id } },
+        ],
+        relations: { requester: true },
+        order: { createdAt: 'DESC' },
+      });
+
+      expect(result).toEqual([purchaseRequest]);
+    });
+  });
+
   describe('findRecent', () => {
     it('deve listar as recentes da equipe, ocultando rascunhos de outros usuários', async () => {
       repository.find.mockResolvedValue([purchaseRequest]);

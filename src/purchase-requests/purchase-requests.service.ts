@@ -65,14 +65,30 @@ export class PurchaseRequestsService {
     });
   }
 
+  private teamVisibility(userId: string) {
+    return [
+      { status: Not(PurchaseRequestStatus.DRAFT) },
+      { requester: { id: userId } },
+    ];
+  }
+
+  async findTeam(userId: string): Promise<PurchaseRequest[]> {
+    return this.purchaseRequestsRepository.find({
+      where: this.teamVisibility(userId),
+      relations: {
+        requester: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
   async findRecent(userId: string, limit = 10): Promise<PurchaseRequest[]> {
     const safeLimit = Math.min(50, Math.max(1, Math.floor(limit)));
 
     return this.purchaseRequestsRepository.find({
-      where: [
-        { status: Not(PurchaseRequestStatus.DRAFT) },
-        { requester: { id: userId } },
-      ],
+      where: this.teamVisibility(userId),
       relations: {
         requester: true,
       },
