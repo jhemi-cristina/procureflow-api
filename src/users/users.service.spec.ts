@@ -392,4 +392,36 @@ describe('UsersService', () => {
       );
     });
   });
+
+  describe('updateRole', () => {
+    it('deve alterar o perfil do usuário', async () => {
+      repository.findOneBy.mockResolvedValue(user);
+      repository.update.mockResolvedValue({ affected: 1 });
+      repository.findOne.mockResolvedValue(buildUser({ role: UserRole.APPROVER }));
+
+      const result = await service.updateRole('user-123', UserRole.APPROVER);
+
+      expect(repository.update).toHaveBeenCalledWith('user-123', {
+        role: UserRole.APPROVER,
+      });
+      expect(result.role).toBe(UserRole.APPROVER);
+    });
+
+    it('não deve atualizar quando o perfil já é o informado', async () => {
+      repository.findOneBy.mockResolvedValue(user);
+      repository.findOne.mockResolvedValue(user);
+
+      await service.updateRole('user-123', UserRole.REQUESTER);
+
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar NotFoundException ao alterar perfil de usuário inexistente', async () => {
+      repository.findOneBy.mockResolvedValue(null);
+
+      await expect(
+        service.updateRole('inexistente', UserRole.ADMIN),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });

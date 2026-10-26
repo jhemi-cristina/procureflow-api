@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -200,6 +200,20 @@ export class UsersService {
     await this.usersRepository.update(id, {
       isActive: true,
     });
+
+    return this.findById(id);
+  }
+
+  async updateRole(id: string, role: UserRole) {
+    const user = await this.usersRepository.findOneBy({ id });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    if (user.role !== role) {
+      await this.usersRepository.update(id, { role });
+    }
 
     return this.findById(id);
   }

@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -12,6 +13,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -30,6 +32,21 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+
+interface AuthenticatedRequest {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
+function assertNotSelf(targetId: string, req: AuthenticatedRequest, message: string) {
+  if (targetId === req.user.id) {
+    throw new ForbiddenException(message);
+  }
+}
 
 @ApiTags('Usuários')
 @Controller('users')
@@ -116,12 +133,37 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'UUID do usuário' })
   @ApiResponse({ status: 200, description: 'Usuário desativado.' })
   @ApiResponse({ status: 401, description: 'Não autenticado.' })
-  @ApiResponse({ status: 403, description: 'Apenas administradores podem desativar usuários.' })
+  @ApiResponse({ status: 403, description: 'Apenas administradores podem desativar usuários, e não é possível desativar a própria conta.' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
   deactivate(
     @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
   ) {
+    assertNotSelf(id, req, 'Você não pode desativar a própria conta.');
     return this.usersService.deactivate(id);
+  }
+
+  @Patch(':id/role')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Alterar perfil do usuário',
+    description: 'Define o perfil de acesso (admin, approver ou requester). Restrito a administradores.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID do usuário' })
+  @ApiResponse({ status: 200, description: 'Perfil atualizado.' })
+  @ApiResponse({ status: 400, description: 'Perfil ou UUID inválido.' })
+  @ApiResponse({ status: 401, description: 'Não autenticado.' })
+  @ApiResponse({ status: 403, description: 'Apenas administradores podem alterar perfis, e não é possível alterar o próprio.' })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
+  updateRole(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserRoleDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    assertNotSelf(id, req, 'Você não pode alterar o próprio perfil.');
+    return this.usersService.updateRole(id, dto.role);
   }
 
   @Patch(':id/activate')

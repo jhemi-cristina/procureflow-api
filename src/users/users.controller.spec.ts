@@ -1,4 +1,5 @@
 
+import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -13,9 +14,18 @@ describe('UsersController', () => {
     update: jest.Mock;
     deactivate: jest.Mock;
     activate: jest.Mock;
+    updateRole: jest.Mock;
   };
 
   const userId = '85610652-bfa8-408f-b27f-5db072bba46b';
+
+  const adminRequest = {
+    user: {
+      id: 'a1b2c3d4-0000-4000-8000-000000000001',
+      email: 'admin@example.com',
+      role: UserRole.ADMIN,
+    },
+  };
 
   const user = {
     id: userId,
@@ -33,6 +43,7 @@ describe('UsersController', () => {
       update: jest.fn(),
       deactivate: jest.fn(),
       activate: jest.fn(),
+      updateRole: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -110,11 +121,47 @@ describe('UsersController', () => {
       const inactiveUser = { ...user, isActive: false };
       usersService.deactivate.mockResolvedValue(inactiveUser);
 
-      await expect(controller.deactivate(userId)).resolves.toEqual(
+      await expect(controller.deactivate(userId, adminRequest)).resolves.toEqual(
         inactiveUser,
       );
 
       expect(usersService.deactivate).toHaveBeenCalledWith(userId);
+    });
+
+    it('deve impedir que o administrador desative a própria conta', () => {
+      expect(() =>
+        controller.deactivate(adminRequest.user.id, adminRequest),
+      ).toThrow(ForbiddenException);
+
+      expect(usersService.deactivate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateRole', () => {
+    it('deve encaminhar o ID e o novo perfil', async () => {
+      const approver = { ...user, role: UserRole.APPROVER };
+      usersService.updateRole.mockResolvedValue(approver);
+
+      await expect(
+        controller.updateRole(userId, { role: UserRole.APPROVER }, adminRequest),
+      ).resolves.toEqual(approver);
+
+      expect(usersService.updateRole).toHaveBeenCalledWith(
+        userId,
+        UserRole.APPROVER,
+      );
+    });
+
+    it('deve impedir que o administrador altere o próprio perfil', () => {
+      expect(() =>
+        controller.updateRole(
+          adminRequest.user.id,
+          { role: UserRole.REQUESTER },
+          adminRequest,
+        ),
+      ).toThrow(ForbiddenException);
+
+      expect(usersService.updateRole).not.toHaveBeenCalled();
     });
   });
 
