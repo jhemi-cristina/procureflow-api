@@ -6,11 +6,20 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Origens separadas por vírgula. Padrão: front web (3001) e app mobile rodando na web (8081).
+  // Apps nativos (iOS/Android) não enviam Origin e não passam por CORS.
+  const corsOrigins = (
+    process.env.CORS_ORIGINS ?? 'http://localhost:3001,http://localhost:8081'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-  origin: 'http://localhost:3001',
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-});
+    origin: corsOrigins,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
   app.setGlobalPrefix('api/v1');
 
