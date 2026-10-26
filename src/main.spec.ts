@@ -23,10 +23,14 @@ jest.mock('@nestjs/swagger', () => {
   };
 });
 
+const ENV_KEYS = ['PORT', 'CORS_ORIGINS', 'SWAGGER_USER', 'SWAGGER_PASSWORD'] as const;
+
 describe('main.ts', () => {
   let app: {
+    enableCors: jest.Mock;
     setGlobalPrefix: jest.Mock;
     useGlobalPipes: jest.Mock;
+    use: jest.Mock;
     listen: jest.Mock;
   };
 
@@ -39,13 +43,32 @@ describe('main.ts', () => {
   };
 
   const document = { openapi: '3.0.0' };
+  const originalEnv: Partial<Record<(typeof ENV_KEYS)[number], string>> = {};
+
+  beforeAll(() => {
+    for (const key of ENV_KEYS) originalEnv[key] = process.env[key];
+  });
+
+  afterEach(() => {
+    for (const key of ENV_KEYS) {
+      if (originalEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = originalEnv[key];
+    }
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
 
+    delete process.env.PORT;
+    delete process.env.CORS_ORIGINS;
+    process.env.SWAGGER_USER = 'admin';
+    process.env.SWAGGER_PASSWORD = 'secret';
+
     app = {
+      enableCors: jest.fn(),
       setGlobalPrefix: jest.fn(),
       useGlobalPipes: jest.fn(),
+      use: jest.fn(),
       listen: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -66,6 +89,7 @@ describe('main.ts', () => {
     await jest.isolateModulesAsync(async () => {
       await import('./main');
     });
+    await new Promise((resolve) => setImmediate(resolve));
   }
 
   it('deve criar a aplicação NestJS', async () => {
@@ -73,6 +97,29 @@ describe('main.ts', () => {
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
     expect(mockCreate).toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  it('deve liberar no CORS o front web e o app mobile por padrão', async () => {
+    await runBootstrap();
+
+    expect(app.enableCors).toHaveBeenCalledWith(
+      expect.objectContaining({
+        origin: ['http://localhost:3001', 'http://localhost:8081'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+      }),
+    );
+  });
+
+  it('deve ler as origens do CORS da variável CORS_ORIGINS', async () => {
+    process.env.CORS_ORIGINS = 'https://app.exemplo.com, https://admin.exemplo.com,';
+
+    await runBootstrap();
+
+    expect(app.enableCors).toHaveBeenCalledWith(
+      expect.objectContaining({
+        origin: ['https://app.exemplo.com', 'https://admin.exemplo.com'],
+      }),
+    );
   });
 
   it('deve configurar o prefixo global da API', async () => {
@@ -98,6 +145,15 @@ describe('main.ts', () => {
     expect(validationPipe['isTransformEnabled']).toBe(true);
   });
 
+  it('deve proteger a documentação Swagger com basic auth', async () => {
+    await runBootstrap();
+
+    expect(app.use).toHaveBeenCalledWith(
+      ['/api/docs', '/api/docs-json'],
+      expect.any(Function),
+    );
+  });
+
   it('deve configurar a documentação Swagger', async () => {
     await runBootstrap();
 
@@ -111,20 +167,18 @@ describe('main.ts', () => {
     expect(mockSetup).toHaveBeenCalledWith('api/docs', app, document);
   });
 
-  it('deve usar a porta 3000 quando PORT não estiver definida', async () => {
-    const originalPort = process.env.PORT;
-    delete process.env.PORT;
+  it('deve usar a porta 3000 quando PORT não for informada', async () => {
+    await runBootstrap();
 
-    try {
-      await runBootstrap();
+    expect(app.listen).toHaveBeenCalledTimes(1);
+    expect(String(app.listen.mock.calls[0][0])).toBe('3000');
+  });
 
-      expect(app.listen).toHaveBeenCalledWith('3000');
-    } finally {
-      if (originalPort === undefined) {
-        delete process.env.PORT;
-      } else {
-        process.env.PORT = originalPort;
-      }
-    }
+  it('deve usar a porta definida em PORT', async () => {
+    process.env.PORT = '4000';
+
+    await runBootstrap();
+
+    expect(app.listen).toHaveBeenCalledWith('4000');
   });
 });
