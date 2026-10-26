@@ -1,11 +1,10 @@
-
 import {
   Injectable,
   NotFoundException,
   ForbiddenException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 
 import {
   PurchaseRequest,
@@ -52,17 +51,48 @@ export class PurchaseRequestsService {
     });
   }
 
-  async findOne(
-    id: string,
-    requesterId: string,
-  ): Promise<PurchaseRequest> {
-    const purchaseRequest = await this.purchaseRequestsRepository.findOne({
+  async findPendingApprovals(): Promise<PurchaseRequest[]> {
+    return this.purchaseRequestsRepository.find({
       where: {
-        id,
-        requester: { id: requesterId },
+        status: PurchaseRequestStatus.PENDING,
       },
       relations: {
         requester: true,
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+  }
+
+  async findRecent(userId: string, limit = 10): Promise<PurchaseRequest[]> {
+    const safeLimit = Math.min(50, Math.max(1, Math.floor(limit)));
+
+    return this.purchaseRequestsRepository.find({
+      where: [
+        { status: Not(PurchaseRequestStatus.DRAFT) },
+        { requester: { id: userId } },
+      ],
+      relations: {
+        requester: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+      take: safeLimit,
+    });
+  }
+
+  async findOne(
+    id: string,
+    requesterId: string,
+    { canViewAll = false }: { canViewAll?: boolean } = {},
+  ): Promise<PurchaseRequest> {
+    const purchaseRequest = await this.purchaseRequestsRepository.findOne({
+      where: canViewAll ? { id } : { id, requester: { id: requesterId } },
+      relations: {
+        requester: true,
+        decidedBy: true,
       },
     });
 
@@ -174,6 +204,5 @@ async decide(
 
   return this.purchaseRequestsRepository.save(purchaseRequest);
 }
-
 
 }

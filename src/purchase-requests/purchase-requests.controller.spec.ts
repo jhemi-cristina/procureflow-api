@@ -9,6 +9,8 @@ describe('PurchaseRequestsController', () => {
   let purchaseRequestsService: {
     create: jest.Mock;
     findAll: jest.Mock;
+    findPendingApprovals: jest.Mock;
+    findRecent: jest.Mock;
     findOne: jest.Mock;
     update: jest.Mock;
     submit: jest.Mock;
@@ -46,6 +48,8 @@ describe('PurchaseRequestsController', () => {
     purchaseRequestsService = {
       create: jest.fn(),
       findAll: jest.fn(),
+      findPendingApprovals: jest.fn(),
+      findRecent: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
       submit: jest.fn(),
@@ -111,6 +115,28 @@ describe('PurchaseRequestsController', () => {
     });
   });
 
+  describe('findPendingApprovals', () => {
+    it('deve retornar a fila de aprovação', async () => {
+      purchaseRequestsService.findPendingApprovals.mockResolvedValue([request]);
+
+      await expect(controller.findPendingApprovals()).resolves.toEqual([request]);
+
+      expect(purchaseRequestsService.findPendingApprovals).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('findRecent', () => {
+    it('deve listar as recentes da equipe para o usuário autenticado', async () => {
+      purchaseRequestsService.findRecent.mockResolvedValue([request]);
+
+      await expect(
+        controller.findRecent(authenticatedRequest as any, 5),
+      ).resolves.toEqual([request]);
+
+      expect(purchaseRequestsService.findRecent).toHaveBeenCalledWith(user.id, 5);
+    });
+  });
+
   describe('findOne', () => {
     it('deve consultar uma solicitação pelo ID e usuário', async () => {
       purchaseRequestsService.findOne.mockResolvedValue(request);
@@ -122,8 +148,26 @@ describe('PurchaseRequestsController', () => {
       expect(purchaseRequestsService.findOne).toHaveBeenCalledWith(
         'request-123',
         user.id,
+        { canViewAll: false },
       );
     });
+
+    it.each(['admin', 'approver'])(
+      'deve permitir que o perfil %s consulte solicitações de outros usuários',
+      async (role) => {
+        purchaseRequestsService.findOne.mockResolvedValue(request);
+
+        await controller.findOne('request-123', {
+          user: { ...authenticatedRequest.user, role },
+        } as any);
+
+        expect(purchaseRequestsService.findOne).toHaveBeenCalledWith(
+          'request-123',
+          user.id,
+          { canViewAll: true },
+        );
+      },
+    );
   });
 
   describe('update', () => {

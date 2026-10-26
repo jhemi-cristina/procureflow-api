@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Not } from 'typeorm';
 
 import { PurchaseRequestsService } from './purchase-requests.service';
 import {
@@ -141,6 +142,55 @@ describe('PurchaseRequestsService', () => {
     });
   });
 
+  describe('findPendingApprovals', () => {
+    it('deve listar as solicitações pendentes de todos os usuários, das mais antigas para as mais novas', async () => {
+      repository.find.mockResolvedValue([purchaseRequest]);
+
+      const result = await service.findPendingApprovals();
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { status: PurchaseRequestStatus.PENDING },
+        relations: { requester: true },
+        order: { createdAt: 'ASC' },
+      });
+
+      expect(result).toEqual([purchaseRequest]);
+    });
+  });
+
+  describe('findRecent', () => {
+    it('deve listar as recentes da equipe, ocultando rascunhos de outros usuários', async () => {
+      repository.find.mockResolvedValue([purchaseRequest]);
+
+      const result = await service.findRecent(requester.id, 5);
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: [
+          { status: Not(PurchaseRequestStatus.DRAFT) },
+          { requester: { id: requester.id } },
+        ],
+        relations: { requester: true },
+        order: { createdAt: 'DESC' },
+        take: 5,
+      });
+
+      expect(result).toEqual([purchaseRequest]);
+    });
+
+    it.each([
+      [0, 1],
+      [500, 50],
+    ])('deve limitar a quantidade %i para %i', async (limit, expected) => {
+      repository.find.mockResolvedValue([]);
+
+      await service.findRecent(requester.id, limit);
+
+      expect(repository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ take: expected }),
+      );
+    });
+  });
+
   describe('findOne', () => {
     it('deve retornar uma solicitação pertencente ao solicitante', async () => {
       repository.findOne.mockResolvedValue(purchaseRequest);
@@ -152,10 +202,21 @@ describe('PurchaseRequestsService', () => {
           id: purchaseRequest.id,
           requester: { id: requester.id },
         },
-        relations: { requester: true },
+        relations: { requester: true, decidedBy: true },
       });
 
       expect(result).toEqual(purchaseRequest);
+    });
+
+    it('deve permitir consultar solicitações de outros usuários quando canViewAll for verdadeiro', async () => {
+      repository.findOne.mockResolvedValue(purchaseRequest);
+
+      await service.findOne(purchaseRequest.id, 'aprovador-123', { canViewAll: true });
+
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: purchaseRequest.id },
+        relations: { requester: true, decidedBy: true },
+      });
     });
 
     it('deve lançar NotFoundException quando a solicitação não existir ou não pertencer ao solicitante', async () => {

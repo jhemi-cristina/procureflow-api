@@ -1,11 +1,13 @@
-
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Patch,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +15,7 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -27,6 +30,10 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
+
+function canReviewRequests(role: string) {
+  return role === UserRole.ADMIN || role === UserRole.APPROVER;
+}
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -73,8 +80,46 @@ export class PurchaseRequestsController {
     return this.purchaseRequestsService.findAll(req.user.id);
   }
 
+  @Get('approvals')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.APPROVER)
+  @ApiOperation({
+    summary: 'Listar fila de aprovação',
+    description:
+      'Retorna as solicitações pendentes de todos os usuários. Disponível apenas para administradores e aprovadores.',
+  })
+  @ApiResponse({ status: 200, description: 'Fila de aprovação retornada com sucesso.' })
+  @ApiResponse({ status: 401, description: 'Não autenticado.' })
+  @ApiResponse({ status: 403, description: 'Perfil sem permissão.' })
+  findPendingApprovals() {
+    return this.purchaseRequestsService.findPendingApprovals();
+  }
+
+  @Get('recent')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.APPROVER)
+  @ApiOperation({
+    summary: 'Listar solicitações recentes da equipe',
+    description:
+      'Retorna as solicitações mais recentes de todos os usuários, exceto rascunhos de terceiros. Disponível apenas para administradores e aprovadores.',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Quantidade máxima (1 a 50).' })
+  @ApiResponse({ status: 200, description: 'Solicitações recentes retornadas com sucesso.' })
+  @ApiResponse({ status: 401, description: 'Não autenticado.' })
+  @ApiResponse({ status: 403, description: 'Perfil sem permissão.' })
+  findRecent(
+    @Req() req: AuthenticatedRequest,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.purchaseRequestsService.findRecent(req.user.id, limit);
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Consultar uma solicitação' })
+  @ApiOperation({
+    summary: 'Consultar uma solicitação',
+    description:
+      'Solicitantes consultam apenas as próprias solicitações; administradores e aprovadores consultam qualquer uma.',
+  })
   @ApiParam({ name: 'id', description: 'UUID da solicitação de compra' })
   @ApiResponse({ status: 200, description: 'Solicitação encontrada.' })
   @ApiResponse({ status: 404, description: 'Solicitação não encontrada ou não pertence ao usuário.' })
@@ -83,7 +128,9 @@ export class PurchaseRequestsController {
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.purchaseRequestsService.findOne(id, req.user.id);
+    return this.purchaseRequestsService.findOne(id, req.user.id, {
+      canViewAll: canReviewRequests(req.user.role),
+    });
   }
 
   @Patch(':id')
