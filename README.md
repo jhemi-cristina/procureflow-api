@@ -1,8 +1,8 @@
 # ProcureFlow API
 
-**API REST para gerenciamento de solicitações de compra, desenvolvida com NestJS, TypeScript e PostgreSQL.**
+**REST API for managing purchase requests, built with NestJS, TypeScript and PostgreSQL.**
 
-O ProcureFlow é um projeto de backend que demonstra a implementação de uma API organizada em módulos, com autenticação, controle de acesso, persistência relacional e testes automatizados. O objetivo é centralizar o gerenciamento de usuários e solicitações de compra, incluindo o acompanhamento de decisões de aprovação ou rejeição.
+ProcureFlow is a backend project that demonstrates a modular API with authentication, access control, relational persistence and automated tests. Its goal is to centralize the management of users and purchase requests, including tracking approval and rejection decisions.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
@@ -13,143 +13,143 @@ O ProcureFlow é um projeto de backend que demonstra a implementação de uma AP
 </p>
 
 <p align="center">
-  <a href="https://github.com/jhemi-cristina/procureflow-api">Repositório no GitHub</a>
+  <a href="https://github.com/jhemi-cristina/procureflow-api">GitHub Repository</a>
 </p>
 
-## ✨ Funcionalidades
+## ✨ Features
 
-- **Autenticação:** estrutura de autenticação baseada em JWT.
-- **Controle de acesso:** guards e autorização baseada em papéis (*roles*).
-- **Gerenciamento de usuários:** operações e regras de negócio para usuários.
-- **Solicitações de compra:** gerenciamento de solicitações e seus estados.
-- **Decisões de compra:** suporte a decisões de aprovação ou rejeição, com registro de justificativa.
-- **Persistência de dados:** integração com PostgreSQL utilizando TypeORM.
-- **Migrations:** controle versionado da evolução do banco de dados.
-- **Testes automatizados:** testes unitários e testes de integração E2E.
-- **Validação de qualidade:** lint, compilação e verificação de cobertura de testes.
+- **Authentication:** JWT-based authentication.
+- **Access control:** guards and role-based authorization.
+- **User management:** user operations and business rules.
+- **Purchase requests:** management of purchase requests and their statuses.
+- **Purchase decisions:** support for approval or rejection decisions, with a recorded justification.
+- **Data persistence:** PostgreSQL integration using TypeORM.
+- **Migrations:** versioned control of database schema changes.
+- **Automated tests:** unit tests and E2E integration tests.
+- **Quality checks:** linting, compilation and test coverage verification.
 
-## 🛠️ Tecnologias
+## 🛠️ Tech Stack
 
-| Tecnologia | Utilização |
+| Technology | Purpose |
 |---|---|
-| Node.js | Ambiente de execução |
-| TypeScript | Tipagem estática |
-| NestJS | Framework para desenvolvimento da API |
-| PostgreSQL | Banco de dados relacional |
-| TypeORM | Mapeamento objeto-relacional e migrations |
-| JWT | Autenticação baseada em tokens |
-| Jest | Testes automatizados |
-| Supertest | Testes HTTP E2E |
-| Oxlint | Análise estática e qualidade do código |
-| Docker | Ambiente de banco de dados, quando utilizado na configuração local |
+| Node.js | Runtime environment |
+| TypeScript | Static typing |
+| NestJS | API framework |
+| PostgreSQL | Relational database |
+| TypeORM | Object-relational mapping and migrations |
+| JWT | Token-based authentication |
+| Jest | Automated testing |
+| Supertest | HTTP E2E testing |
+| Oxlint | Static analysis and code quality |
+| Docker | Database environment, when used in the local setup |
 
-## 🏗️ Arquitetura
+## 🏗️ Architecture
 
-O projeto utiliza a organização modular do NestJS, separando responsabilidades por domínio.
+The project follows NestJS's modular structure, separating responsibilities by domain.
 
 ```text
 procureflow-api/
 ├── src/
-│   ├── auth/                 # Autenticação e autorização
-│   │   ├── guards/           # Proteção de rotas
-│   │   └── strategies/       # Estratégias de autenticação
-│   ├── users/                # Domínio de usuários
-│   ├── purchase-requests/    # Solicitações de compra
+│   ├── auth/                 # Authentication and authorization
+│   │   ├── guards/           # Route protection
+│   │   └── strategies/       # Authentication strategies
+│   ├── users/                # Users domain
+│   ├── purchase-requests/    # Purchase requests
 │   ├── database/
-│   │   └── migrations/       # Evolução do banco de dados
-│   └── main.ts               # Inicialização da aplicação
-├── test/                     # Testes E2E e configuração
-├── typeorm.config.ts         # Configuração do TypeORM
-├── typeorm.e2e.config.ts     # Configuração do banco para E2E
+│   │   └── migrations/       # Database schema evolution
+│   └── main.ts               # Application bootstrap
+├── test/                     # E2E tests and configuration
+├── typeorm.config.ts         # TypeORM configuration
+├── typeorm.e2e.config.ts     # E2E database configuration
 └── package.json
 ```
 
-Essa estrutura facilita a manutenção, a evolução das regras de negócio e a criação de testes isolados por módulo.
+This structure makes the code easier to maintain, simplifies evolving business rules and allows isolated tests per module.
 
-## ⚙️ Pré-requisitos
+## ⚙️ Prerequisites
 
-Antes de começar, você precisa ter instalado:
+Before you start, make sure you have installed:
 
-- [Node.js](https://nodejs.org/) em uma versão compatível com o projeto.
+- [Node.js](https://nodejs.org/) in a version compatible with the project.
 - npm.
-- [PostgreSQL](https://www.postgresql.org/)  ou Docker para executar o banco de dados.
+- [PostgreSQL](https://www.postgresql.org/) or Docker to run the database.
 - Git.
 
-## 🚀 Instalação e execução
+## 🚀 Installation and Running
 
-### 1. Clone o repositório
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/jhemi-cristina/procureflow-api.git
 cd procureflow-api
 ```
 
-### 2. Instale as dependências
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure as variáveis de ambiente
+### 3. Configure environment variables
 
-Crie um arquivo `.env` na raiz do projeto e configure as variáveis utilizadas pela aplicação:
+Create a `.env` file in the project root and set the variables used by the application:
 
 ```env
 DB_HOST=localhost
 DB_PORT=5432
-DB_USERNAME=seu_usuario
-DB_PASSWORD=sua_senha
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
 DB_DATABASE=procureflow
 ```
 
-Configure também os segredos e demais variáveis exigidos pela autenticação e pela configuração atual da aplicação.
+Also configure the secrets and any other variables required by authentication and the current application setup.
 
-> **Importante:** não versione arquivos `.env` nem compartilhe credenciais reais. Utilize valores locais e seguros para cada ambiente.
+> **Important:** do not commit `.env` files or share real credentials. Use local, secure values for each environment.
 
-### 4. Prepare o banco de dados
+### 4. Set up the database
 
-Crie o banco PostgreSQL configurado nas variáveis de ambiente e aplique as migrations disponíveis no projeto.
+Create the PostgreSQL database defined in your environment variables and run the project's migrations.
 
 ```bash
 npm run migration:run
 ```
 
-### 5. Inicie a aplicação
+### 5. Start the application
 
 ```bash
-# Desenvolvimento
+# Development
 npm run start:dev
 
-# Execução convencional
+# Standard run
 npm run start
 
-# Compilação para produção
+# Production build
 npm run build
 
-# Execução da versão compilada
+# Run the compiled build
 npm run start:prod
 ```
 
-A API utiliza o prefixo `/api/v1` nos endpoints E2E. Consulte os controllers do projeto para verificar as rotas disponíveis e os respectivos contratos.
+The API uses the `/api/v1` prefix in the E2E endpoints. Check the project's controllers for the available routes and their contracts.
 
-## 🧪 Testes e qualidade
+## 🧪 Testing and Quality
 
-A qualidade do projeto é verificada com testes automatizados, análise estática e compilação.
+Project quality is verified through automated tests, static analysis and compilation.
 
-### Executar os testes
+### Running tests
 
 ```bash
-# Testes unitários
+# Unit tests
 npm run test
 
-# Testes unitários com cobertura
+# Unit tests with coverage
 npm run test:cov
 
-# Testes E2E
+# E2E tests
 npm run test:e2e
 ```
 
-### Verificar a qualidade do código
+### Checking code quality
 
 ```bash
 # Lint
@@ -159,62 +159,62 @@ npm run lint
 npm run build
 ```
 
-### Resultados de validação
+### Validation results
 
-Na última execução validada durante o desenvolvimento:
+From the latest validated run during development:
 
-| Verificação | Resultado |
+| Check | Result |
 |---|---:|
-| Suítes de testes unitários | 14 aprovadas |
-| Testes unitários | 101 aprovados |
-| Suítes E2E | 1 aprovada |
-| Testes E2E | 22 aprovados |
-| Cobertura de statements | 99% |
-| Cobertura de linhas | 98,91% |
-| Lint | 0 warnings e 0 erros |
-| Build | Aprovado |
+| Unit test suites | 14 passed |
+| Unit tests | 101 passed |
+| E2E suites | 1 passed |
+| E2E tests | 22 passed |
+| Statement coverage | 99% |
+| Line coverage | 98.91% |
+| Lint | 0 warnings and 0 errors |
+| Build | Passed |
 
-*Os números representam a execução de testes realizada durante o desenvolvimento e podem variar conforme novas alterações forem feitas.*
+*These numbers reflect a test run performed during development and may change as new changes are made.*
 
-**Banco de dados dos testes E2E:** os testes utilizam a configuração isolada `test/.env.e2e` e exigem que `DB_DATABASE` seja exatamente `procureflow_test`. Crie esse banco separadamente do banco de desenvolvimento antes de executar os testes. Não utilize dados importantes ou de produção nesse ambiente.
+**E2E test database:** the tests use the isolated `test/.env.e2e` configuration and require `DB_DATABASE` to be exactly `procureflow_test`. Create this database separately from the development database before running the tests. Do not use important or production data in this environment.
 
 ## 🗃️ Migrations
 
-O projeto utiliza migrations do TypeORM para versionar as alterações estruturais do banco de dados.
+The project uses TypeORM migrations to version structural database changes.
 
 ```bash
-# Executar migrations pendentes
+# Run pending migrations
 npm run migration:run
 
-# Reverter a última migration
+# Revert the last migration
 npm run migration:revert
 ```
 
-Para gerar uma nova migration, utilize o comando correspondente à alteração desejada e revise o arquivo gerado antes de executá-lo.
+To create a new migration, use the command for the desired change and review the generated file before running it.
 
-## 🔐 Segurança
+## 🔐 Security
 
-A API possui uma estrutura de autenticação JWT e mecanismos de autorização por papéis. Para executar o projeto em um ambiente real:
+The API includes JWT authentication and role-based authorization. To run the project in a real environment:
 
-- Utilize segredos fortes e exclusivos por ambiente.
-- Nunca envie tokens, senhas ou arquivos de ambiente para o Git.
-- Restrinja o acesso ao banco de dados.
-- Valide as permissões das operações sensíveis.
-- Mantenha as dependências atualizadas.
-- Utilize HTTPS e configurações adequadas ao ambiente de produção.
+- Use strong, unique secrets for each environment.
+- Never commit tokens, passwords or environment files to Git.
+- Restrict database access.
+- Validate permissions for sensitive operations.
+- Keep dependencies up to date.
+- Use HTTPS and production-appropriate settings.
 
-## 📌 Próximos passos
+## 📌 Next Steps
 
-Possíveis evoluções para o projeto incluem:
+Possible improvements for the project include:
 
-- Documentação interativa da API com Swagger/OpenAPI.
-- Pipeline de CI para executar lint, testes e build automaticamente.
-- Monitoramento e logging estruturados.
-- Deploy automatizado em um ambiente de nuvem.
-- Ampliação dos cenários de teste e das regras de negócio.
+- Interactive API documentation with Swagger/OpenAPI.
+- A CI pipeline to run lint, tests and build automatically.
+- Structured monitoring and logging.
+- Automated deployment to a cloud environment.
+- Broader test scenarios and business rules.
 
 ---
 
 <p align="center">
-  Desenvolvido com TypeScript e NestJS.
+  Built with TypeScript and NestJS.
 </p>
