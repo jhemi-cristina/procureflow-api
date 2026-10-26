@@ -1,126 +1,220 @@
+# ProcureFlow API
+
+**API REST para gerenciamento de solicitações de compra, desenvolvida com NestJS, TypeScript e PostgreSQL.**
+
+O ProcureFlow é um projeto de backend que demonstra a implementação de uma API organizada em módulos, com autenticação, controle de acesso, persistência relacional e testes automatizados. O objetivo é centralizar o gerenciamento de usuários e solicitações de compra, incluindo o acompanhamento de decisões de aprovação ou rejeição.
+
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" alt="NestJS" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/TypeORM-FE0803?style=for-the-badge&logo=typeorm&logoColor=white" alt="TypeORM" />
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+<p align="center">
+  <a href="https://github.com/jhemi-cristina/procureflow-api">Repositório no GitHub</a>
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+## ✨ Funcionalidades
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Autenticação:** estrutura de autenticação baseada em JWT.
+- **Controle de acesso:** guards e autorização baseada em papéis (*roles*).
+- **Gerenciamento de usuários:** operações e regras de negócio para usuários.
+- **Solicitações de compra:** gerenciamento de solicitações e seus estados.
+- **Decisões de compra:** suporte a decisões de aprovação ou rejeição, com registro de justificativa.
+- **Persistência de dados:** integração com PostgreSQL utilizando TypeORM.
+- **Migrations:** controle versionado da evolução do banco de dados.
+- **Testes automatizados:** testes unitários e testes de integração E2E.
+- **Validação de qualidade:** lint, compilação e verificação de cobertura de testes.
 
-## Project setup
+## 🛠️ Tecnologias
 
-```bash
-$ npm install
+| Tecnologia | Utilização |
+|---|---|
+| Node.js | Ambiente de execução |
+| TypeScript | Tipagem estática |
+| NestJS | Framework para desenvolvimento da API |
+| PostgreSQL | Banco de dados relacional |
+| TypeORM | Mapeamento objeto-relacional e migrations |
+| JWT | Autenticação baseada em tokens |
+| Jest | Testes automatizados |
+| Supertest | Testes HTTP E2E |
+| Oxlint | Análise estática e qualidade do código |
+| Docker | Ambiente de banco de dados, quando utilizado na configuração local |
+
+## 🏗️ Arquitetura
+
+O projeto utiliza a organização modular do NestJS, separando responsabilidades por domínio.
+
+```text
+procureflow-api/
+├── src/
+│   ├── auth/                 # Autenticação e autorização
+│   │   ├── guards/           # Proteção de rotas
+│   │   └── strategies/       # Estratégias de autenticação
+│   ├── users/                # Domínio de usuários
+│   ├── purchase-requests/    # Solicitações de compra
+│   ├── database/
+│   │   └── migrations/       # Evolução do banco de dados
+│   └── main.ts               # Inicialização da aplicação
+├── test/                     # Testes E2E e configuração
+├── typeorm.config.ts         # Configuração do TypeORM
+├── typeorm.e2e.config.ts     # Configuração do banco para E2E
+└── package.json
 ```
 
-## Compile and run the project
+Essa estrutura facilita a manutenção, a evolução das regras de negócio e a criação de testes isolados por módulo.
+
+## ⚙️ Pré-requisitos
+
+Antes de começar, você precisa ter instalado:
+
+- [Node.js](https://nodejs.org/) em uma versão compatível com o projeto.
+- npm.
+- [PostgreSQL](https://www.postgresql.org/)  ou Docker para executar o banco de dados.
+- Git.
+
+## 🚀 Instalação e execução
+
+### 1. Clone o repositório
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/jhemi-cristina/procureflow-api.git
+cd procureflow-api
 ```
 
-## Run tests
+### 2. Instale as dependências
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
+### 3. Configure as variáveis de ambiente
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Crie um arquivo `.env` na raiz do projeto e configure as variáveis utilizadas pela aplicação:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=seu_usuario
+DB_PASSWORD=sua_senha
+DB_DATABASE=procureflow
+```
+
+Configure também os segredos e demais variáveis exigidos pela autenticação e pela configuração atual da aplicação.
+
+> **Importante:** não versione arquivos `.env` nem compartilhe credenciais reais. Utilize valores locais e seguros para cada ambiente.
+
+### 4. Prepare o banco de dados
+
+Crie o banco PostgreSQL configurado nas variáveis de ambiente e aplique as migrations disponíveis no projeto.
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run migration:run
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-This project is already instrumented. To connect it, run this and approve the code it prints at [observe.nestjs.com/link](https://observe.nestjs.com/link) - signing up for free if you have no account:
+### 5. Inicie a aplicação
 
 ```bash
-$ npx @nestjs/observe link
+# Desenvolvimento
+npm run start:dev
+
+# Execução convencional
+npm run start
+
+# Compilação para produção
+npm run build
+
+# Execução da versão compilada
+npm run start:prod
 ```
 
-It writes the app key and secret into `.env` and makes every `nest start` script (`start`, `start:dev`, `start:debug`) load it. In production, set `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` in the environment instead.
+A API utiliza o prefixo `/api/v1` nos endpoints E2E. Consulte os controllers do projeto para verificar as rotas disponíveis e os respectivos contratos.
 
-Or do it by hand: create an application and an API key at [observe.nestjs.com](https://observe.nestjs.com), and set the pair as `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` in the environment the app runs in.
+## 🧪 Testes e qualidade
 
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
+A qualidade do projeto é verificada com testes automatizados, análise estática e compilação.
 
-## Resources
+### Executar os testes
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+# Testes unitários
+npm run test
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Testes unitários com cobertura
+npm run test:cov
 
-## Support
+# Testes E2E
+npm run test:e2e
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Verificar a qualidade do código
 
-## Stay in touch
+```bash
+# Lint
+npm run lint
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Build
+npm run build
+```
 
-## License
+### Resultados de validação
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Na última execução validada durante o desenvolvimento:
+
+| Verificação | Resultado |
+|---|---:|
+| Suítes de testes unitários | 14 aprovadas |
+| Testes unitários | 101 aprovados |
+| Suítes E2E | 1 aprovada |
+| Testes E2E | 22 aprovados |
+| Cobertura de statements | 99% |
+| Cobertura de linhas | 98,91% |
+| Lint | 0 warnings e 0 erros |
+| Build | Aprovado |
+
+*Os números representam a execução de testes realizada durante o desenvolvimento e podem variar conforme novas alterações forem feitas.*
+
+**Banco de dados dos testes E2E:** os testes utilizam a configuração isolada `test/.env.e2e` e exigem que `DB_DATABASE` seja exatamente `procureflow_test`. Crie esse banco separadamente do banco de desenvolvimento antes de executar os testes. Não utilize dados importantes ou de produção nesse ambiente.
+
+## 🗃️ Migrations
+
+O projeto utiliza migrations do TypeORM para versionar as alterações estruturais do banco de dados.
+
+```bash
+# Executar migrations pendentes
+npm run migration:run
+
+# Reverter a última migration
+npm run migration:revert
+```
+
+Para gerar uma nova migration, utilize o comando correspondente à alteração desejada e revise o arquivo gerado antes de executá-lo.
+
+## 🔐 Segurança
+
+A API possui uma estrutura de autenticação JWT e mecanismos de autorização por papéis. Para executar o projeto em um ambiente real:
+
+- Utilize segredos fortes e exclusivos por ambiente.
+- Nunca envie tokens, senhas ou arquivos de ambiente para o Git.
+- Restrinja o acesso ao banco de dados.
+- Valide as permissões das operações sensíveis.
+- Mantenha as dependências atualizadas.
+- Utilize HTTPS e configurações adequadas ao ambiente de produção.
+
+## 📌 Próximos passos
+
+Possíveis evoluções para o projeto incluem:
+
+- Documentação interativa da API com Swagger/OpenAPI.
+- Pipeline de CI para executar lint, testes e build automaticamente.
+- Monitoramento e logging estruturados.
+- Deploy automatizado em um ambiente de nuvem.
+- Ampliação dos cenários de teste e das regras de negócio.
+
+---
+
+<p align="center">
+  Desenvolvido com TypeScript e NestJS.
+</p>
