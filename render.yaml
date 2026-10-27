@@ -1,0 +1,63 @@
+databases:
+  - name: procureflow-db
+    plan: free
+    region: ohio
+    databaseName: procureflow
+    user: procureflow
+
+services:
+  - type: web
+    name: procureflow-api
+    runtime: node
+    plan: free
+    region: ohio
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run migration:run && npm run start:prod
+    healthCheckPath: /api/v1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: procureflow-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: procureflow-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: procureflow-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: procureflow-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: procureflow-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: SWAGGER_USER
+        sync: false
+      - key: SWAGGER_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+
+  - type: web
+    name: procureflow-web
+    runtime: node
+    plan: free
+    region: ohio
+    repo: https://github.com/jhemi-cristina/procureflow-web
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npx next start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
